@@ -1,0 +1,83 @@
+# PYTHERA
+
+# How to write this config.yaml file | Follow the below structure
+# Must have 4 main section, which is :"input_pipeline", "config_pipeline", "calib_config", "output"
+
+# STRUCTURE
+# image_prompt_path:
+#   prompt_file_path: path
+#   image_sd_folder_path: path (if needed)
+#   image_cnet_folder_path: path (if needed)
+# input_pipeline:
+#   "depend on your pipeline input u want to use"
+# calib_config:
+#   batch_size: int
+#   quant_level: float    
+#   calibrate_size: int8
+#   export_onnx: bool
+# output:
+#   output_model_path: path
+
+
+# 1/ image_prompt_path (sub-section must be the same name as the structure):
+# Usage: use for defined prompt file path, image folder path (if needed)
+# Note: a. !!! order of prompt and image must be same
+#       b. !!! in case your pipeline dont use image as input, just fill the 2 image for sd and cnet as NONE
+  # 1.1/ prompt_file_path: path to the .txt file contain all the prompt 
+  # 1.2/ image_sd_folder_path: path to the folder contain all the image to use for SD
+  # 1.3/ image_cnet_folder_path: path to the folder contain all the image to use for ControlNet
+
+
+# 2/ input_pipeline: 
+# Usage: a. Use for defined input for pipeline, defined all variable of pipeline that you gonna use for the pipeline. Example: number inference steps, condition_scale,....
+#        b. With the prompt, neg_prompt and images (all kind of input image, example: image input for controlnet, ip adapter,...)
+#           You just need set the value of that variable same as the name of that variable.
+#           Example: promt: prompt | neg_prompt: neg_prompt | images: images
+# Note: a. !!! order of prompt and image must be same
+#       b. !!! name of the input you defined must be same with the name of
+
+# 3/ calib_config (sub-section must be the same name as the structure):
+# Usage: use for defined config for calibration process. Must same name as the sample
+# Explain:
+    # 3.1/ batch_size (int): Batch_size for how many prompt load to calbrate each time
+    # 3.2/ quant_level (float): ""
+    #     Ảnh hưởng của quant_level:
+    #     quant_level = 2:
+
+    #     Chỉ các module liên quan đến ff.net (Fully-Connected Network) sẽ được lượng tử hóa.
+    #     Không lượng tử hóa các module liên quan đến to_q, to_k, hoặc to_v.
+    #     quant_level = 2.5:
+
+    #     Ngoài các module thuộc ff.net, các module có tên chứa to_q, to_k, hoặc to_v (thường là attention layers) cũng sẽ được lượng tử hóa.
+    #     quant_level = 3:
+
+    #     Mọi module torch.nn.Linear sẽ được lượng tử hóa bất kể tên hay chức năng.
+        
+    #     (Default) quant_level = 3.0
+    #     ""
+    # 3.3/ calibrate_size (int): là số bước lặp trong quá trình hiệu chỉnh mô hình để chuẩn bị lượng tử hóa int8. (Default) calib_size = 384 as default in tensorRT documents.
+    # Cơ bản cái 3.3 này là tổng số epoch muốn train cho quá trình calibrate
+    # 3.4/ export_onnx: Export ra ONNX từ model.pt sau khi được calibrate xuống int8.
+
+# 4/ output (sub-section must be the same name as the structure): use for defined folder path to directory that we gonna save your .pt and onnx (Optional) model.
+
+
+# Example
+
+image_prompt_path:
+  prompt_file_path: '/home/tiennv/trang/Convert-_Unet_int8_Rebuild/Diffusion/ControlNeXt-SDXL/calibration-prompts.txt' 
+  image_sd_folder_path: None
+  image_cnet_folder_path: None
+
+input_pipeline:
+  num_inference_steps: 50
+
+calib_config:
+  batch_size: 4
+  quant_level: 3.0     
+  calibrate_size: 384
+  export_onnx: True
+
+output:
+  output_model_path: '/home/tiennv/trang/model_unet_quantize_full_onnx_2/test_calib'
+
