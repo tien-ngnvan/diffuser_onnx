@@ -6,7 +6,7 @@ from diffusers import StableDiffusionPipeline
 import ammo.torch.quantization as atq 
 import ammo.torch.opt as ato
 import logging
-from dynamic_calibrate_utils import *
+from src.dynamic_calibrate_utils import *
 
 """ Logger """
 logging.basicConfig(filename="/home/tiennv/trang/model_unet_quantize_full_onnx_2/repo/Quantize-Calibration-int8/log_calibrate/calibrate_unet.log",
