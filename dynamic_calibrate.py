@@ -76,8 +76,9 @@ def main(sd_pipeline=None,
         raise ValueError(f"Inputs are wrong. Can not find '{missing_keys}' in your pipeline.__call__ input. Please provie correct input variable name, double-check with the name of your pipeline input log up there.")
         
     # Check for image_path exist (if pipeline needed)
-    # sd_image, cnet_image: If these variable = True -> pipeline require image for sd or cnet. Else the pipeline not require image
     yaml_config_image_prompt_path = yaml_config['image_prompt_path']
+
+    # sd_image, cnet_image: If these variable = True -> pipeline require image for sd or cnet. Else the pipeline not require image
     sd_image, cnet_image = check_image_in_input(dict_input_pipeline, yaml_config_image_prompt_path)
 
 
