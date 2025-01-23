@@ -31,8 +31,8 @@
 # 2/ input_pipeline: 
 # Usage: a. Use for defined input for pipeline, defined all variable of pipeline that you gonna use for the pipeline. Example: number inference steps, condition_scale,....
 #        b. With the prompt, neg_prompt and images (all kind of input image, example: image input for controlnet, ip adapter,...)
-#           You just need set the value of that variable same as the name of that variable.
-#           Example: promt: prompt | neg_prompt: neg_prompt | images: images
+#           You must set the value of that variable same as the name of that variable.
+#           Example: promt: prompt | neg_prompt: neg_prompt | images: images | controlnet_image: controlnet_image 
 # Note: a. !!! order of prompt and image must be same
 #       b. !!! name of the input you defined must be same with the name of
 
@@ -65,12 +65,13 @@
 # Example
 
 image_prompt_path:
-  prompt_file_path: '/home/tiennv/trang/Convert-_Unet_int8_Rebuild/Diffusion/ControlNeXt-SDXL/calibration-prompts.txt' 
+  prompt_file_path: '/home/tiennv/trang/model_unet_quantize_full_onnx_2/test_calib/diffuser_onnx_calibrate/calibrate_captions1.txt' 
   image_sd_folder_path: None
-  image_cnet_folder_path: None
+  image_cnet_folder_path: '/home/tiennv/trang/model_unet_quantize_full_onnx_2/test_calib/diffuser_onnx_calibrate/calibrate_images1'
 
 input_pipeline:
   num_inference_steps: 50
+  controlnet_image: controlnet_image
 
 calib_config:
   batch_size: 4

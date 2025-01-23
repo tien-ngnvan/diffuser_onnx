@@ -7,32 +7,11 @@ import torch
 from pathlib import Path
 import onnx
 import torch
+from PIL import Image
 
 
 
 """ MY UTILS """
-
-# def extract_input_pipeline(sd_pipeline):
-#     inputs = inspect.signature(sd_pipeline.__call__)
-#     filtered_params = [
-#         param for param in inputs.parameters.values()
-#         if ("Optional" not in str(param.annotation)) and (
-#             param.name == "prompt" or ("image" in param.name and "ip_adapter_image" not in param.name)
-#         )
-        
-#     ]
-#     filtered_param_names = [param.name for param in filtered_params]
-#     return filtered_param_names
-
-
-# def check_pipeline_input_name(dict_base, dict_sample):
-#     # Find elements from dict_base that are missing in dict_sample
-#     missing_elements = {
-#         key: value for key, value in dict_base.items()
-#         if key not in dict_sample or dict_sample[key] != value
-#     }
-#     return missing_elements
-
 
 def extract_and_validate_pipeline(sd_pipeline, yaml_input_pipeline):
     inputs = inspect.signature(sd_pipeline.__call__)
@@ -55,41 +34,14 @@ def check_image_in_input(list_input_sd, yaml_config_input_pipeline):
     for sd_input in list_input_sd:
         if sd_input == "image": 
             sd_image = True
-            if yaml_config_input_pipeline['image_sd_folder_path'] is None:
-                raise ValueError("Error: 'image_sd_folder_path' cannot be None - Because your Img2Img pipeline require a imgage as input. Please provide a valid input path.")
+            if yaml_config_input_pipeline['image_sd_folder_path'] == 'None':
+                raise ValueError("Error: 'image_sd_folder_path' cannot be None - Because your pipeline require a imgage as input. Please provide a valid input path.")
 
         elif "image" in sd_input: 
             cnet_image = True
-            if yaml_config_input_pipeline['image_cnet_folder_path'] is None:
+            if yaml_config_input_pipeline['image_cnet_folder_path'] == 'None':
                 raise ValueError ("Error: 'image_cnet_folder_path' cannot be None - Because your controlnet sd pipeline require a imgage as input. Please provide a valid input path.")
     return sd_image, cnet_image
-
-
-# def validate_yaml_structure(logger, file_path):
-#     required_sections = {"image_prompt_path", "input_pipeline", "calib_config", "output"}
-    
-#     try:
-#         # Load the YAML file
-#         with open(file_path, 'r') as file:
-#             data = yaml.safe_load(file)
-
-#         # Get the top-level keys
-#         yaml_sections = set(data.keys())
-        
-#         # Check if all required sections are present
-#         if yaml_sections == required_sections:
-#             logger.info("YAML structure is VALID.")
-#             return data
-#         else:
-#             missing = required_sections - yaml_sections
-#             extra = yaml_sections - required_sections
-#             if missing:
-#                 raise ValueError(f"Missing sections: {missing}. Double-check the structure of .yaml file, base on the docs in .yaml file.")
-#             if extra:
-#                 logger.warning(f"Unexpected sections: {extra}. This/These extra section(s) won't be use during this process.")
-#                 return data
-#     except Exception as e:
-#         raise ValueError(f"Error validating YAML: {e}")
 
 
 def validate_yaml_structure(logger, file_path):
@@ -142,22 +94,17 @@ def validate_yaml_structure(logger, file_path):
 
 """ TENSORT UTILS """
 
-def load_calibration_images(folder_path, batch_size):
-    images = []
-    for filename in os.listdir(folder_path):
-        img_path = os.path.join(folder_path, filename)
-        if os.path.isfile(img_path):
-            image = load_image(img_path)
-            if image is not None:
-                images.append(image)
+# def load_calibration_images(folder_path, batch_size):
+#     images = []
+#     for filename in os.listdir(folder_path):
+#         img_path = os.path.join(folder_path, filename)
+#         if os.path.isfile(img_path):
+#             image = load_image(img_path)
+#             if image is not None:
+#                 images.append(image)
 
-    # Group images into batches of size `batch_size`
-    return [images[i : i + batch_size] for i in range(0, len(images), batch_size)]
-
-def load_calib_prompts(batch_size, calib_data_path):
-    with open(calib_data_path, "r") as file:
-        lst = [line.rstrip("\n") for line in file]
-    return [lst[i : i + batch_size] for i in range(0, len(lst), batch_size)]
+#     # Group images into batches of size `batch_size`
+#     return [images[i : i + batch_size] for i in range(0, len(images), batch_size)]
 
 def load_calibration_images(folder_path):
     images = []
@@ -165,9 +112,25 @@ def load_calibration_images(folder_path):
         img_path = os.path.join(folder_path, filename)
         if os.path.isfile(img_path):
             image = load_image(img_path)
+            
             if image is not None:
                 images.append(image)
     return images
+
+# def load_calib_prompts(batch_size, calib_data_path):
+#     with open(calib_data_path, "r") as file:
+#         lst = [line.rstrip("\n") for line in file]
+#     return [lst[i : i + batch_size] for i in range(0, len(lst), batch_size)]
+
+def load_calib_prompts(calib_data_path):
+    prompts = [] 
+    with open(calib_data_path, "r") as file:
+        for line in file:
+            match = re.search(r":\s*[\"'](.*?)[\"'](?=})", line.rstrip("\n"))
+            if match:
+                extracted_text = match.group(1)
+                prompts.append(extracted_text)
+    return prompts
 
 def get_smoothquant_config(model, quant_level=3):
     quant_config = {
@@ -204,7 +167,6 @@ def filter_func(name):
     )
     return pattern.match(name) is not None
 
-
 def quantize_lvl(unet, quant_level=2.5):
     for name, module in unet.named_modules():
         if isinstance(module, torch.nn.Conv2d):
@@ -232,7 +194,7 @@ def do_calibrate(base, calibration_prompts, dynamic_input, yaml_config, **kwargs
         epoch = len(calibration_prompts)
     elif yaml_config['calib_config']['calibrate_size'] < len(calibration_prompts):
         epoch = yaml_config['calib_config']['calibrate_size']
-        
+
     for i_th in range(int(epoch)):
         image = None
         try:
@@ -242,9 +204,12 @@ def do_calibrate(base, calibration_prompts, dynamic_input, yaml_config, **kwargs
                 if i_th < len(calibration_imgs):
                     # Handle image
                     image = calibration_imgs[i_th]
+                    print("image type",type(image))
                     for key in dynamic_input:
                         if 'image' in key:  # Check if 'image' is in the key
+                            print("key",key)
                             dynamic_input[key] = image
+                            
         except KeyError as e:
             raise ValueError(f"KeyError: Missing key in kwargs: {e}")
         except Exception as e:
@@ -254,7 +219,7 @@ def do_calibrate(base, calibration_prompts, dynamic_input, yaml_config, **kwargs
         prompt = calibration_prompts[i_th]
         negative_prompt=[
                 "normal quality, low quality, worst quality, low res, blurry, nsfw, nude"
-            ]* len(prompt)
+            ]
         dynamic_input['prompt'] = prompt
         dynamic_input['negative_prompt'] = negative_prompt
     

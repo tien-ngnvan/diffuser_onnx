@@ -76,8 +76,10 @@ def main(sd_pipeline=None,
         raise ValueError(f"Inputs are wrong. Can not find '{missing_keys}' in your pipeline.__call__ input. Please provie correct input variable name, double-check with the name of your pipeline input log up there.")
         
     # Check for image_path exist (if pipeline needed)
+    yaml_config_image_prompt_path = yaml_config['image_prompt_path']
+
     # sd_image, cnet_image: If these variable = True -> pipeline require image for sd or cnet. Else the pipeline not require image
-    sd_image, cnet_image = check_image_in_input(dict_input_pipeline, yaml_config_input_pipeline)
+    sd_image, cnet_image = check_image_in_input(dict_input_pipeline, yaml_config_image_prompt_path)
 
 
 
@@ -99,17 +101,17 @@ def main(sd_pipeline=None,
     pipeline.to(device)
 
     # LOAD IMAGE to list image object. Read image py 'load_image' of diffusers
-    calib_prompts_list = load_calib_prompts(batch_size=BATCH_SIZE, calib_data_path=INPUT_PROMPT_FILE_PATH)
+    calib_prompts_list = load_calib_prompts(calib_data_path=INPUT_PROMPT_FILE_PATH)
     calib_sd_image_list = None
     calib_cnet_image_list = None
     if sd_image == True:
-        calib_sd_image_list = load_calibration_images(batch_size=BATCH_SIZE, folder_path=INPUT_SD_IMG_FOLDER_PATH)
+        calib_sd_image_list = load_calibration_images(folder_path=INPUT_SD_IMG_FOLDER_PATH)
         if len(calib_prompts_list)!=len(calib_sd_image_list):
-            raise ValueError(f"Length of list calib_prompt and calib_sd_img is not equal.\n Length of calib_prompt is:{len(calib_prompts_list)}.\n Length of calib_sd_img is {len(calib_sd_image_list)}")
+            raise ValueError(f"Length of list calib_prompt and calib_sd_img is not equal.\n Length of calib_prompt: {len(calib_prompts_list)}.\n Length of calib_sd_img: {len(calib_sd_image_list)}")
     if cnet_image == True:
-        calib_cnet_image_list = load_calibration_images(batch_size=BATCH_SIZE, folder_path=INPUT_CNEXT_IMG_FOLDER_PATH)
+        calib_cnet_image_list = load_calibration_images(folder_path=INPUT_CNEXT_IMG_FOLDER_PATH)
         if len(calib_prompts_list)!=len(calib_cnet_image_list):
-            raise ValueError(f"Length of list calib_prompt and calib_cnet_img is not equal.\n Length of calib_prompt is:{len(calib_prompts_list)}.\n Length of calib_cnet_img is {len(calib_cnet_image_list)}")
+            raise ValueError(f"Length of list calib_prompt and calib_cnet_img is not equal.\n Length of calib_prompt: {len(calib_prompts_list)}\n Length of calib_cnet_img: {len(calib_cnet_image_list)}")
     
     # Quantize_config
     quant_config = get_smoothquant_config(pipeline.unet, quant_level=QUANT_LEVEL)
@@ -195,28 +197,29 @@ def main(sd_pipeline=None,
 
 if __name__ == "__main__":
     
-    pipeline = StableDiffusionPipeline.from_pretrained("wyyadd/sd-1.5", torch_dtype=torch.float16)
+    # pipeline = StableDiffusionPipeline.from_pretrained("wyyadd/sd-1.5", torch_dtype=torch.float16)
     
-    # pipeline = tools.get_pipeline(
-    #     "neta-art/neta-xl-2.0",
-    #     "Eugeoter/controlnext-sdxl-anime-canny",
-    #     "Eugeoter/controlnext-sdxl-anime-canny",
-    #     vae_model_name_or_path="madebyollin/sdxl-vae-fp16-fix",
-    #     lora_path=None,
-    #     load_weight_increasement=False,
-    #     enable_xformers_memory_efficient_attention=False,
-    #     revision=None,
-    #     variant=None,
-    #     hf_cache_dir=None,
-    #     use_safetensors=True,
-    #     device='cuda',
-    # )
     
-
+    from utils import tools
+    pipeline = tools.get_pipeline(
+        "neta-art/neta-xl-2.0",
+        "Eugeoter/controlnext-sdxl-anime-canny",
+        "Eugeoter/controlnext-sdxl-anime-canny",
+        vae_model_name_or_path="madebyollin/sdxl-vae-fp16-fix",
+        lora_path=None,
+        load_weight_increasement=False,
+        enable_xformers_memory_efficient_attention=False,
+        revision=None,
+        variant=None,
+        hf_cache_dir=None,
+        use_safetensors=True,
+        device='cuda',
+    )
+    
     # Read YAML file
     config_yaml_path = "/home/tiennv/trang/Convert-_Unet_int8_Rebuild/Diffusion/config.yaml"
     
     main(sd_pipeline=pipeline, 
         yaml_path=config_yaml_path,
-        use_gpu = True,
+        use_gpu = False,
         )
